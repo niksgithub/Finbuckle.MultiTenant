@@ -1,4 +1,4 @@
-//    Copyright 2018 Andrew White
+//    Copyright 2020 Andrew White
 // 
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
@@ -13,9 +13,17 @@
 //    limitations under the License.
 
 using Finbuckle.MultiTenant;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+using Finbuckle.MultiTenant.Core;
+using Xunit;
 
-namespace Microsoft.Extensions.DependencyInjection
+public class AsyncLocalMultiTenantContextAccessorShould
 {
-    
+    [Fact]
+    public void ReturnCurrentAsyncLocalMultiTenantContext()
+    {
+        var context = new MultiTenantContext();
+        AsyncLocalMultiTenantContextAccessor._asyncLocalContext.Value = context;
+        var accessor = new AsyncLocalMultiTenantContextAccessor();
+        Assert.Same(context, accessor.MultiTenantContext);
+    }
 }

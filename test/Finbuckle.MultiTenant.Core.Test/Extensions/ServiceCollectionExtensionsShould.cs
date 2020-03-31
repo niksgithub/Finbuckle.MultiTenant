@@ -1,4 +1,4 @@
-//    Copyright 2018 Andrew White
+//    Copyright 2020 Andrew White
 // 
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
@@ -14,39 +14,19 @@
 
 using System.Linq;
 using Finbuckle.MultiTenant;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 public class ServiceCollectionExtensionsShould
 {
-    internal void configTestRoute(Microsoft.AspNetCore.Routing.IRouteBuilder routes)
-    {
-        routes.MapRoute("Defaut", "{__tenant__=}/{controller=Home}/{action=Index}");
-    }
-
     [Fact]
     public void RegisterTenantInfoInDI()
     {
         var services = new ServiceCollection();
         services.AddMultiTenant();
-        
-        var service = services.Where(s =>   s.Lifetime == ServiceLifetime.Scoped &&
+
+        var service = services.Where(s => s.Lifetime == ServiceLifetime.Scoped &&
                                             s.ServiceType == typeof(TenantInfo)).SingleOrDefault();
-
-        Assert.NotNull(service);
-    }
-
-    [Fact]
-    public void RegisterIHttpContextAccessorInDI()
-    {
-        var services = new ServiceCollection();
-        services.AddMultiTenant();
-        
-        var service = services.Where(s =>   s.Lifetime == ServiceLifetime.Singleton &&
-                                            s.ServiceType == typeof(IHttpContextAccessor)).SingleOrDefault();
 
         Assert.NotNull(service);
     }
@@ -56,8 +36,8 @@ public class ServiceCollectionExtensionsShould
     {
         var services = new ServiceCollection();
         services.AddMultiTenant();
-        
-        var service = services.Where(s =>   s.Lifetime == ServiceLifetime.Singleton &&
+
+        var service = services.Where(s => s.Lifetime == ServiceLifetime.Singleton &&
                                             s.ServiceType == typeof(IMultiTenantContextAccessor)).SingleOrDefault();
 
         Assert.NotNull(service);

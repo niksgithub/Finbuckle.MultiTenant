@@ -12,14 +12,13 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Finbuckle.MultiTenant.Core;
 using Finbuckle.MultiTenant.Stores;
 using Finbuckle.MultiTenant.Strategies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace Finbuckle.MultiTenant.AspNetCore
 {
@@ -42,6 +41,7 @@ namespace Finbuckle.MultiTenant.AspNetCore
             {
                 var multiTenantContext = new MultiTenantContext();
                 context.Items.Add(Constants.HttpContextMultiTenantContext, multiTenantContext);
+                AsyncLocalMultiTenantContextAccessor._asyncLocalContext.Value = multiTenantContext;
 
                 IMultiTenantStrategy strategy = null;
                 string identifier = null;

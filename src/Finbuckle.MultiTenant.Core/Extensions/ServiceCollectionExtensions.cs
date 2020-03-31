@@ -14,11 +14,27 @@
 
 using System;
 using System.Linq;
+using Finbuckle.MultiTenant;
+using Finbuckle.MultiTenant.Core;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    public static class FinbuckleServiceCollectionExtensions
+    public static class FinbuckleMultiTenantServiceCollectionExtensions
     {
+        /// <summary>
+        /// Configure Finbuckle.MultiTenant services for the application.
+        /// </summary>
+        /// <param name="services">The IServiceCollection<c/> instance the extension method applies to.</param>
+        /// <returns>An new instance of MultiTenantBuilder.</returns>
+        public static FinbuckleMultiTenantBuilder AddMultiTenant(this IServiceCollection services)
+        {
+            services.TryAddScoped<TenantInfo>(sp => sp.GetRequiredService<IMultiTenantContextAccessor>().MultiTenantContext?.TenantInfo);
+            services.TryAddSingleton<IMultiTenantContextAccessor>(new AsyncLocalMultiTenantContextAccessor());
+
+            return new FinbuckleMultiTenantBuilder(services);
+        }
+
         public static bool DecorateService<TService, TImpl>(this IServiceCollection services, params object[] parameters)
         {
             var existingService = services.SingleOrDefault(s => s.ServiceType == typeof(TService));

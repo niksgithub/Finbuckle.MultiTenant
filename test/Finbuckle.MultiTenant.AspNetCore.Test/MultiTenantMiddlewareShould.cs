@@ -72,7 +72,7 @@ public class MultiTenantMiddlewareShould
 
         services.AddMultiTenant().WithInMemoryStore()
             .WithStrategy<TestStrat1>(ServiceLifetime.Singleton, _ =>
-            new TestStrat1(c => 
+            new TestStrat1(c =>
             {
                 count1++;
                 time1 = DateTime.Now;
@@ -80,7 +80,7 @@ public class MultiTenantMiddlewareShould
                 return Task.FromResult<string>(null);
             }))
             .WithStrategy<TestStrat2>(ServiceLifetime.Singleton, _ =>
-            new TestStrat2(c => 
+            new TestStrat2(c =>
             {
                 count2++;
                 time2 = DateTime.Now;
@@ -88,7 +88,7 @@ public class MultiTenantMiddlewareShould
                 return Task.FromResult<string>(null);
             }))
             .WithStrategy<TestStrat3>(ServiceLifetime.Singleton, _ =>
-            new TestStrat3(c => 
+            new TestStrat3(c =>
             {
                 count3++;
                 time3 = DateTime.Now;
@@ -121,7 +121,7 @@ public class MultiTenantMiddlewareShould
 
         services.AddMultiTenant().WithInMemoryStore()
             .WithStrategy<TestStrat1>(ServiceLifetime.Singleton, _ =>
-            new TestStrat1(c => 
+            new TestStrat1(c =>
             {
                 count1++;
                 time1 = DateTime.Now;
@@ -129,7 +129,7 @@ public class MultiTenantMiddlewareShould
                 return Task.FromResult<string>(null);
             }))
             .WithStrategy<TestStrat2>(ServiceLifetime.Singleton, _ =>
-            new TestStrat2(c => 
+            new TestStrat2(c =>
             {
                 count2++;
                 time2 = DateTime.Now;
@@ -137,7 +137,7 @@ public class MultiTenantMiddlewareShould
                 return Task.FromResult<string>("found");
             }))
             .WithStrategy<TestStrat3>(ServiceLifetime.Singleton, _ =>
-            new TestStrat3(c => 
+            new TestStrat3(c =>
             {
                 count3++;
                 time3 = DateTime.Now;
@@ -158,7 +158,7 @@ public class MultiTenantMiddlewareShould
     }
 
     [Fact]
-    public void SetTenantInfo()
+    public void SetTenantInfoInHttpContext()
     {
         var services = new ServiceCollection();
         services.AddMultiTenant().WithInMemoryStore().WithStaticStrategy("initech");
@@ -179,6 +179,31 @@ public class MultiTenantMiddlewareShould
     }
 
     [Fact]
+    public void SetTenantInfoInMultiTenantContextAccessor()
+    {
+        var services = new ServiceCollection();
+        services.AddMultiTenant().WithInMemoryStore().WithStaticStrategy("initech");
+        var sp = services.BuildServiceProvider();
+        var ti = new TenantInfo("initech", "initech", null, null, null);
+        sp.GetService<IMultiTenantStore>().TryAddAsync(ti).Wait();
+
+        var context = CreateHttpContextMock(sp).Object;
+
+        IMultiTenantContext resolvedTenantContext = null;
+        var mw = new MultiTenantMiddleware(c =>
+        {
+            resolvedTenantContext = sp.GetService<IMultiTenantContextAccessor>().MultiTenantContext;
+            return Task.CompletedTask;
+        });
+        mw.Invoke(context).Wait();
+
+        Assert.NotNull(resolvedTenantContext.TenantInfo);
+        Assert.Equal("initech", resolvedTenantContext.TenantInfo.Id);
+        Assert.Equal("initech", resolvedTenantContext.TenantInfo.Identifier);
+        Assert.NotNull(resolvedTenantContext.TenantInfo.MultiTenantContext);
+    }
+
+    [Fact]
     public void SetStrategyInfo()
     {
         var services = new ServiceCollection();
@@ -192,14 +217,14 @@ public class MultiTenantMiddlewareShould
         mw.Invoke(context).Wait();
 
         var resolvedContext = (MultiTenantContext)context.Items[Finbuckle.MultiTenant.AspNetCore.Constants.HttpContextMultiTenantContext];
-        
+
         Assert.NotNull(resolvedContext.StrategyInfo);
         Assert.NotNull(resolvedContext.StrategyInfo.Strategy);
 
         // Test that the wrapper strategy was "unwrapped"
         Assert.Equal(typeof(StaticStrategy), resolvedContext.StrategyInfo.StrategyType);
         Assert.IsType<StaticStrategy>(resolvedContext.StrategyInfo.Strategy);
-        
+
         Assert.NotNull(resolvedContext.StrategyInfo.MultiTenantContext);
     }
 
@@ -218,11 +243,11 @@ public class MultiTenantMiddlewareShould
         mw.Invoke(context).Wait();
 
         var resolvedContext = (MultiTenantContext)context.Items[Finbuckle.MultiTenant.AspNetCore.Constants.HttpContextMultiTenantContext];
-        
+
         Assert.NotNull(resolvedContext.StoreInfo);
         Assert.NotNull(resolvedContext.StoreInfo.Store);
 
-         // Test that the wrapper store was "unwrapped"
+        // Test that the wrapper store was "unwrapped"
         Assert.Equal(typeof(InMemoryStore), resolvedContext.StoreInfo.StoreType);
         Assert.IsType<InMemoryStore>(resolvedContext.StoreInfo.Store);
 
@@ -324,11 +349,11 @@ public class MultiTenantMiddlewareShould
         services.AddAuthentication();
         services.AddSingleton<RemoteAuthenticationStrategy>(remoteResolverMock.Object);
         services.AddMultiTenant().WithInMemoryStore().WithDelegateStrategy(o => Task.FromResult<string>(null)).WithRemoteAuthentication();
-        
+
         // Substitute in the mocks...
         var removed = services.Remove(ServiceDescriptor.Singleton<RemoteAuthenticationStrategy, RemoteAuthenticationStrategy>());
         services.AddSingleton<RemoteAuthenticationStrategy>(_sp => remoteResolverMock.Object);
-        
+
         var sp = services.BuildServiceProvider();
         var mock = CreateHttpContextMock(sp);
         var context = mock.Object;
