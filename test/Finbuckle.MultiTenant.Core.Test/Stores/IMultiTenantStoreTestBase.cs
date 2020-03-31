@@ -76,7 +76,7 @@ public abstract class IMultiTenantStoreTestBase<T> where T : IMultiTenantStore
         var store = CreateTestStore();
 
         var result = store.TryUpdateAsync(new TenantInfo("initech-id", "test123", "name", "connstring", null)).Result;
-        Assert.Equal(true, result);
+        Assert.True(result);
     }
 
     //[Fact]

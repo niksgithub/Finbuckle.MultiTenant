@@ -20,10 +20,12 @@ namespace FallbackStrategySample
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+#pragma warning disable 0618
             services.AddMultiTenant().
                 WithInMemoryStore(Configuration.GetSection("Finbuckle:MultiTenant:InMemoryStore")).
                 WithRouteStrategy(ConfigRoutes).
                 WithFallbackStrategy("finbuckle");
+#pragma warning restore 0618
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)

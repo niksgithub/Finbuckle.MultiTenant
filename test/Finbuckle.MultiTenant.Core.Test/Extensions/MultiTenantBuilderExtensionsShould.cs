@@ -125,7 +125,9 @@ public class MultiTenantBuilderExtensionsShould
 
         var services = new ServiceCollection();
         var builder = new FinbuckleMultiTenantBuilder(services);
+        #pragma warning disable 0618
         builder.WithInMemoryStore(configuration.GetSection("Finbuckle:MultiTenant:InMemoryStore"));
+        #pragma warning restore 0618
         var sp = services.BuildServiceProvider();
 
         var store = sp.GetRequiredService<IMultiTenantStore>();
