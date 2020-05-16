@@ -1,4 +1,4 @@
-//    Copyright 2018-2020 Andrew White
+﻿//    Copyright 2018-2020 Andrew White
 // 
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
@@ -18,15 +18,15 @@ using Microsoft.Extensions.Options;
 
 namespace Finbuckle.MultiTenant.Options
 {
-    internal class MultiTenantOptionsManager<TOptions, TTenantInfo> : OptionsManager<TOptions>
+    internal class MultiTenantOptionsSnapshotManager<TOptions, TTenantInfo> : OptionsManager<TOptions>
         where TOptions : class, new()
         where TTenantInfo : class, ITenantInfo, new()
     {
         private readonly MultiTenantOptionsFactory<TOptions, TTenantInfo> factory;
         private readonly TTenantInfo tenantInfo;
-        private static readonly MultiTenantOptionsCache<TOptions> cache = new MultiTenantOptionsCache<TOptions>(Enumerable.Empty<IOptionsChangeTokenSource<TOptions>>()); // Note: this is a private static cache
+        private readonly MultiTenantOptionsCache<TOptions> cache = new MultiTenantOptionsCache<TOptions>(Enumerable.Empty<IOptionsChangeTokenSource<TOptions>>()); // Note: this is a private cache
 
-        public MultiTenantOptionsManager(MultiTenantOptionsFactory<TOptions, TTenantInfo> factory, TTenantInfo tenantInfo)
+        public MultiTenantOptionsSnapshotManager(MultiTenantOptionsFactory<TOptions, TTenantInfo> factory, TTenantInfo tenantInfo)
             : base(null)
         {
             this.factory = factory;

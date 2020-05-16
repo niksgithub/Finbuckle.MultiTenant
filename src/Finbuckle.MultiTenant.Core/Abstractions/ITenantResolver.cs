@@ -20,7 +20,6 @@ namespace Finbuckle.MultiTenant
     public interface ITenantResolver
     {
         Task<object> ResolveAsync(object context);
-        void SyncMultiTenantContextAccessor();
     }
     
     public interface ITenantResolver<TTenantInfo> : ITenantResolver

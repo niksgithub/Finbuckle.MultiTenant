@@ -13,23 +13,28 @@
 //    limitations under the License.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Extensions.Options;
 
 namespace Finbuckle.MultiTenant.Options
 {
-    internal class MultiTenantOptionsManager<TOptions, TTenantInfo> : OptionsManager<TOptions>
+    internal class MultiTenantOptionsMonitor<TOptions, TTenantInfo> : OptionsMonitor<TOptions>
         where TOptions : class, new()
         where TTenantInfo : class, ITenantInfo, new()
     {
         private readonly MultiTenantOptionsFactory<TOptions, TTenantInfo> factory;
         private readonly TTenantInfo tenantInfo;
-        private static readonly MultiTenantOptionsCache<TOptions> cache = new MultiTenantOptionsCache<TOptions>(Enumerable.Empty<IOptionsChangeTokenSource<TOptions>>()); // Note: this is a private static cache
+        private readonly MultiTenantOptionsCache<TOptions> cache;
 
-        public MultiTenantOptionsManager(MultiTenantOptionsFactory<TOptions, TTenantInfo> factory, TTenantInfo tenantInfo)
-            : base(null)
+
+        public MultiTenantOptionsMonitor(MultiTenantOptionsFactory<TOptions, TTenantInfo> factory,
+                                         MultiTenantOptionsCache<TOptions> cache,
+                                         TTenantInfo tenantInfo)
+            : base(null, Enumerable.Empty<IOptionsChangeTokenSource<TOptions>>(), cache)
         {
             this.factory = factory;
+            this.cache = cache;
             this.tenantInfo = tenantInfo;
         }
 
@@ -37,12 +42,6 @@ namespace Finbuckle.MultiTenant.Options
         {
             name = name ?? Microsoft.Extensions.Options.Options.DefaultName;
             return cache.GetOrAdd(tenantInfo.Id, name, () => factory.Create(tenantInfo, name));
-        }
-
-        [Obsolete]
-        public void Reset()
-        {
-            cache.Clear(tenantInfo.Id);
         }
     }
 }

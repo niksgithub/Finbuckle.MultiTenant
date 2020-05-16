@@ -15,11 +15,9 @@
 using System;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Logging;
-using Finbuckle.MultiTenant.Strategies;
-using Finbuckle.MultiTenant.Stores;
 using Finbuckle.MultiTenant;
 using Finbuckle.MultiTenant.Options;
+using System.Collections.Generic;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -35,48 +33,42 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <summary>
         /// Adds per-tenant configuration for an options class.
         /// </summary>
-        /// <param name="tenantInfo">The configuration action to be run for each tenant.</param>
+        /// <param name="config">The configuration action to be run for each tenant.</param>
         /// <returns>The same MultiTenantBuilder passed into the method.</returns>
-        public FinbuckleMultiTenantBuilder<TTenantInfo> WithPerTenantOptions<TOptions>(Action<TOptions, TTenantInfo> tenantInfo) where TOptions : class, new()
+        public FinbuckleMultiTenantBuilder<TTenantInfo> WithPerTenantOptions<TOptions>(Action<TOptions, TTenantInfo> config)
+            where TOptions : class, new()
         {
-            if (tenantInfo == null)
+            if (config == null)
             {
-                throw new ArgumentNullException(nameof(tenantInfo));
+                throw new ArgumentNullException(nameof(config));
             }
 
-            // Handles multiplexing cached options.
-            Services.TryAddSingleton<IOptionsMonitorCache<TOptions>>(sp =>
-                {
-                    return (MultiTenantOptionsCache<TOptions, TTenantInfo>)
-                        ActivatorUtilities.CreateInstance(sp, typeof(MultiTenantOptionsCache<TOptions, TTenantInfo>));
-                });
-
-            // Necessary to apply tenant options in between configuration and postconfiguration
-            Services.TryAddTransient<IOptionsFactory<TOptions>>(sp =>
-                {
-                    return (IOptionsFactory<TOptions>)ActivatorUtilities.
-                        CreateInstance(sp, typeof(MultiTenantOptionsFactory<TOptions, TTenantInfo>), new[] { tenantInfo });
-                });
-
-            Services.TryAddScoped<IOptionsSnapshot<TOptions>>(sp => BuildOptionsManager<TOptions>(sp));
-
-            Services.TryAddSingleton<IOptions<TOptions>>(sp => BuildOptionsManager<TOptions>(sp));
+            Services.AddScoped<IOptions<TOptions>, MultiTenantOptionsManager<TOptions, TTenantInfo>>();
+            Services.AddScoped<IOptionsSnapshot<TOptions>, MultiTenantOptionsSnapshotManager<TOptions, TTenantInfo>>();
+            Services.AddScoped<IOptionsMonitor<TOptions>, MultiTenantOptionsMonitor<TOptions, TTenantInfo>>();
+            Services.AddSingleton<IOptionsMonitorCache<TOptions>, MultiTenantOptionsCache<TOptions>>();
+            Services.AddTransient<MultiTenantOptionsFactory<TOptions, TTenantInfo>>(sp =>
+            {
+                var setups = sp.GetRequiredService<IEnumerable<IConfigureOptions<TOptions>>>();
+                var postConfigures = sp.GetRequiredService<IEnumerable<IPostConfigureOptions<TOptions>>>();
+                return new MultiTenantOptionsFactory<TOptions, TTenantInfo>(setups, postConfigures, config);
+            });
 
             return this;
         }
 
-        private static MultiTenantOptionsManager<TOptions> BuildOptionsManager<TOptions>(IServiceProvider sp) where TOptions : class, new()
-        {
-            var cache = ActivatorUtilities.CreateInstance(sp, typeof(MultiTenantOptionsCache<TOptions, TTenantInfo>));
-            return (MultiTenantOptionsManager<TOptions>)
-                ActivatorUtilities.CreateInstance(sp, typeof(MultiTenantOptionsManager<TOptions>), new[] { cache });
-        }
+        // private static MultiTenantOptionsManager<TOptions> BuildOptionsManager<TOptions>(IServiceProvider sp) where TOptions : class, new()
+        // {
+        //     var cache = ActivatorUtilities.CreateInstance(sp, typeof(MultiTenantOptionsCache<TOptions>));
+        //     return (MultiTenantOptionsManager<TOptions>)
+        //         ActivatorUtilities.CreateInstance(sp, typeof(MultiTenantOptionsManager<TOptions>), new[] { cache });
+        // }
 
         /// <summary>
         /// Adds and configures a IMultiTenantStore to the application using default dependency injection.
         /// </summary>>
         /// <param name="lifetime">The service lifetime.</param>
-        /// <param name="parameters">a paramter list for any constructor paramaters not covered by dependency injection.</param>
+        /// <param name="parameters">a parameter list for any constructor paramaters not covered by dependency injection.</param>
         /// <returns>The same MultiTenantBuilder passed into the method.</returns>
         public FinbuckleMultiTenantBuilder<TTenantInfo> WithStore<TStore>(ServiceLifetime lifetime, params object[] parameters)
             where TStore : IMultiTenantStore<TTenantInfo>
@@ -106,7 +98,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Adds and configures a IMultiTenantStrategy to the applicationusing default dependency injection.
         /// </summary>
         /// <param name="lifetime">The service lifetime.</param>
-        /// <param name="parameters">a paramter list for any constructor paramaters not covered by dependency injection.</param>
+        /// <param name="parameters">a parameter list for any constructor paramaters not covered by dependency injection.</param>
         /// <returns>The same MultiTenantBuilder passed into the method.</returns>
         public FinbuckleMultiTenantBuilder<TTenantInfo> WithStrategy<TStrategy>(ServiceLifetime lifetime, params object[] parameters) where TStrategy : IMultiTenantStrategy
             => WithStrategy(lifetime, sp => ActivatorUtilities.CreateInstance<TStrategy>(sp, parameters));

@@ -12,10 +12,7 @@
 //    See the License for the specific language governing permissions and
 //    limitations under the License.
 
-namespace Finbuckle.MultiTenant
+public class TestOptions
 {
-    // public interface IMultiTenantContextAccessor<TTenantInfo> where TTenantInfo : class, ITenantInfo, new()
-    // {
-    //     IMultiTenantContext<TTenantInfo> MultiTenantContext { get; set; }
-    // }
+    public string MyVal { get; set; }
 }

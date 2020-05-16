@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Finbuckle.MultiTenant.Stores;
 using Finbuckle.MultiTenant.Strategies;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Finbuckle.MultiTenant
@@ -24,23 +25,16 @@ namespace Finbuckle.MultiTenant
         where TTenantInfo : class, ITenantInfo, new()
     {
         private readonly ILoggerFactory loggerFactory;
-        private readonly IMultiTenantContextAccessor<TTenantInfo> accessor;
 
         public TenantResolver(IEnumerable<IMultiTenantStrategy> strategies, IEnumerable<IMultiTenantStore<TTenantInfo>> stores) :
-            this(strategies, stores, null, null)
+            this(strategies, stores, null)
         {
         }
 
-        public TenantResolver(IEnumerable<IMultiTenantStrategy> strategies, IEnumerable<IMultiTenantStore<TTenantInfo>> stores, IMultiTenantContextAccessor<TTenantInfo> accessor) :
-            this(strategies, stores, accessor, null)
-        {
-        }
-
-        public TenantResolver(IEnumerable<IMultiTenantStrategy> strategies, IEnumerable<IMultiTenantStore<TTenantInfo>> stores, IMultiTenantContextAccessor<TTenantInfo> accessor, ILoggerFactory loggerFactory)
+        public TenantResolver(IEnumerable<IMultiTenantStrategy> strategies, IEnumerable<IMultiTenantStore<TTenantInfo>> stores, ILoggerFactory loggerFactory)
         {
             Strategies = strategies;
             Stores = stores;
-            this.accessor = accessor;
             this.loggerFactory = loggerFactory;
         }
 
@@ -84,12 +78,6 @@ namespace Finbuckle.MultiTenant
 
             MultiTenantContext = result;
             return result;
-        }
-
-        public void SyncMultiTenantContextAccessor()
-        {
-            if(accessor != null)
-                accessor.MultiTenantContext = MultiTenantContext;
         }
     }
 }

@@ -16,7 +16,6 @@ using System;
 using System.Linq;
 using Finbuckle.MultiTenant;
 using Finbuckle.MultiTenant.Core;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -34,7 +33,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddScoped<ITenantResolver>(sp => sp.GetRequiredService<ITenantResolver<TTenantInfo>>());
             services.AddScoped<IMultiTenantContext<TTenantInfo>>(sp => sp.GetRequiredService<ITenantResolver<TTenantInfo>>().MultiTenantContext);
             services.AddScoped<ITenantInfo>(sp => sp.GetRequiredService<ITenantResolver<TTenantInfo>>().MultiTenantContext?.TenantInfo);
-            services.AddSingleton<IMultiTenantContextAccessor<TTenantInfo>, MultiTenantContextAccessor<TTenantInfo>>();
+            // services.AddSingleton<IMultiTenantContextAccessor<TTenantInfo>, MultiTenantContextAccessor<TTenantInfo>>();
             
             return new FinbuckleMultiTenantBuilder<TTenantInfo>(services);
         }

@@ -148,16 +148,17 @@ public class MultiTenantBuilderShould
     [Fact]
     public void AddPerTenantOptions()
     {
-        var services = new ServiceCollection();
-        var accessor = new Mock<IMultiTenantContextAccessor<TenantInfo>>();
-        accessor.Setup(a => a.MultiTenantContext).Returns((IMultiTenantContext<TenantInfo>)null);
-        services.AddSingleton<IMultiTenantContextAccessor<TenantInfo>>(accessor.Object);
-        var builder = new FinbuckleMultiTenantBuilder<TenantInfo>(services);
-        // Note: using MultiTenantBuilderShould as our test options class.
-        builder.WithPerTenantOptions<MultiTenantBuilderShould>((o, tc) => o.TestProperty = 1);
-        var sp = services.BuildServiceProvider();
+        throw new NotImplementedException();
+        // var services = new ServiceCollection();
+        // var accessor = new Mock<IMultiTenantContextAccessor<TenantInfo>>();
+        // accessor.Setup(a => a.MultiTenantContext).Returns((IMultiTenantContext<TenantInfo>)null);
+        // services.AddSingleton<IMultiTenantContextAccessor<TenantInfo>>(accessor.Object);
+        // var builder = new FinbuckleMultiTenantBuilder<TenantInfo>(services);
+        // // Note: using MultiTenantBuilderShould as our test options class.
+        // builder.WithPerTenantOptions<MultiTenantBuilderShould>((o, tc) => o.TestProperty = 1);
+        // var sp = services.BuildServiceProvider();
 
-        var cache = sp.GetRequiredService<IOptionsMonitorCache<MultiTenantBuilderShould>>();
+        // var cache = sp.GetRequiredService<IOptionsMonitorCache<MultiTenantBuilderShould>>();
     }
 
     [Fact]

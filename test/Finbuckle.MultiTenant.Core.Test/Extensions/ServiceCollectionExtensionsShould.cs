@@ -70,17 +70,4 @@ public class ServiceCollectionExtensionsShould
         Assert.NotNull(service);
         Assert.Equal(ServiceLifetime.Scoped, service.Lifetime);
     }
-
-    [Fact]
-    public void RegisterIMultitenantContextAccessorInDI()
-    {
-        var services = new ServiceCollection();
-        services.AddMultiTenant<TenantInfo>();
-        
-        var service = services.Where(s =>   s.Lifetime == ServiceLifetime.Singleton &&
-                                            s.ServiceType == typeof(IMultiTenantContextAccessor<TenantInfo>)).SingleOrDefault();
-
-        Assert.NotNull(service);
-        Assert.Equal(ServiceLifetime.Singleton, service.Lifetime);
-    }
 }

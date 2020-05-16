@@ -18,7 +18,10 @@ namespace AuthenticationOptionsSample
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllersWithViews();
+            services.AddControllersWithViews(options =>
+            {
+                options.RequireHttpsPermanent = false;
+            });
 
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).
                 AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>

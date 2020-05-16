@@ -36,11 +36,11 @@ namespace Finbuckle.MultiTenant.Stores
             }
 
             if (Uri.IsWellFormedUriString(endpointTemplate, UriKind.Absolute))
-                throw new ArgumentException("Paramter 'endpointTemplate' is not a well formed uri.", nameof(endpointTemplate));
+                throw new ArgumentException("parameter 'endpointTemplate' is not a well formed uri.", nameof(endpointTemplate));
 
             if (!endpointTemplate.StartsWith("https", StringComparison.OrdinalIgnoreCase)
                 && !endpointTemplate.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-                throw new ArgumentException("Paramter 'endpointTemplate' is not a an http or https uri.", nameof(endpointTemplate));
+                throw new ArgumentException("parameter 'endpointTemplate' is not a an http or https uri.", nameof(endpointTemplate));
 
             this.endpointTemplate = endpointTemplate;
         }

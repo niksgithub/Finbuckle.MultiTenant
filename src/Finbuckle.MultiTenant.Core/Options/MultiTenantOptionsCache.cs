@@ -14,69 +14,54 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Primitives;
 
 namespace Finbuckle.MultiTenant.Options
 {
-    /// <summary>
-    /// Adds, retrieves, and removes instances of TOptions after adjusting them for the current TenantContext.
-    /// </summary>
-    public class MultiTenantOptionsCache<TOptions, TTenantInfo> : IOptionsMonitorCache<TOptions>
-        where TOptions : class
-        where TTenantInfo : class, ITenantInfo, new()
+    public class MultiTenantOptionsCache<TOptions> : IOptionsMonitorCache<TOptions>
+        where TOptions : class, new()
     {
-        private readonly IMultiTenantContextAccessor<TTenantInfo> multiTenantContextAccessor;
-
-        // The object is just a dummy because there is no ConcurrentSet<T> class.
-        //private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, object>> _adjustedOptionsNames =
-        //  new ConcurrentDictionary<string, ConcurrentDictionary<string, object>>();
-
         private readonly ConcurrentDictionary<string, IOptionsMonitorCache<TOptions>> map = new ConcurrentDictionary<string, IOptionsMonitorCache<TOptions>>();
+        private readonly IOptionsMonitorCache<TOptions> noTenantCache = new OptionsCache<TOptions>();
+        private readonly IEnumerable<IOptionsChangeTokenSource<TOptions>> sources;
+        private readonly List<IDisposable> registrations;
+        private event Action<string> onChange;
 
-        public MultiTenantOptionsCache(IMultiTenantContextAccessor<TTenantInfo> multiTenantContextAccessor)
+        public MultiTenantOptionsCache(IEnumerable<IOptionsChangeTokenSource<TOptions>> sources)
         {
-            this.multiTenantContextAccessor = multiTenantContextAccessor ?? throw new ArgumentNullException(nameof(multiTenantContextAccessor));
+            this.sources = sources;
+
+            foreach (var source in sources)
+            {
+                var registration = ChangeToken.OnChange(() => source.GetChangeToken(),
+                                                        (name) => TryRemove(name ?? Microsoft.Extensions.Options.Options.DefaultName),
+                                                        source.Name);
+
+                registrations.Add(registration);
+            }
         }
 
-        /// <summary>
-        /// Clears all cached options for the current tenant.
-        /// </summary>
-        public void Clear()
-        {
-            var tenantId = multiTenantContextAccessor.MultiTenantContext?.TenantInfo?.Id ?? "";
-            var cache = map.GetOrAdd(tenantId, new OptionsCache<TOptions>());
-
-            cache.Clear();
-        }
-
-        /// <summary>
-        /// Clears all cached options for the given tenant.
-        /// </summary>
-        /// <param name="tenantId">The Id of the tenant which will have its options cleared.</param>
         public void Clear(string tenantId)
         {
-            tenantId = tenantId ?? "";
-            var cache = map.GetOrAdd(tenantId, new OptionsCache<TOptions>());
-
-            cache.Clear();
+            if (tenantId == null)
+                noTenantCache.Clear();
+            else
+            {
+                var cache = map.GetOrAdd(tenantId, new OptionsCache<TOptions>());
+                cache.Clear();
+            }
         }
 
-        /// <summary>
-        /// Clears all cached options for all tenants and no tenant.
-        /// </summary>
-        public void ClearAll()
+        public void Clear()
         {
-            foreach(var cache in map.Values)
+            noTenantCache.Clear();
+            foreach (var cache in map.Values)
                 cache.Clear();
         }
 
-        /// <summary>
-        /// Gets a named options instance for the current tenant, or adds a new instance created with createOptions.
-        /// </summary>
-        /// <param name="name">The options name.</param>
-        /// <param name="createOptions">The factory function for creating the options instance.</param>
-        /// <returns>The existing or new options instance.</returns>
-        public TOptions GetOrAdd(string name, Func<TOptions> createOptions)
+        public TOptions GetOrAdd(string tenantId, string name, Func<TOptions> createOptions)
         {
             if (createOptions == null)
             {
@@ -84,39 +69,62 @@ namespace Finbuckle.MultiTenant.Options
             }
 
             name = name ?? Microsoft.Extensions.Options.Options.DefaultName;
-            var tenantId = multiTenantContextAccessor.MultiTenantContext?.TenantInfo?.Id ?? "";
-            var cache = map.GetOrAdd(tenantId, new OptionsCache<TOptions>());
+
+            IOptionsMonitorCache<TOptions> cache;
+            if(tenantId == null)
+                cache = noTenantCache;
+            else
+                cache = map.GetOrAdd(tenantId, new OptionsCache<TOptions>());
 
             return cache.GetOrAdd(name, createOptions);
         }
 
-        /// <summary>
-        /// Tries to adds a new option to the cache for the current tenant.
-        /// </summary>
-        /// <param name="name">The options name.</param>
-        /// <param name="options">The options instance.</param>
-        /// <returns>True if the options was added to the cache for the current tenant.</returns>
-        public bool TryAdd(string name, TOptions options)
+        public TOptions GetOrAdd(string name, Func<TOptions> createOptions)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool TryAdd(string tenantId, string name, TOptions options)
         {
             name = name ?? Microsoft.Extensions.Options.Options.DefaultName;
-            var tenantId = multiTenantContextAccessor.MultiTenantContext?.TenantInfo?.Id ?? "";
-            var cache = map.GetOrAdd(tenantId, new OptionsCache<TOptions>());
+
+            IOptionsMonitorCache<TOptions> cache;
+            if(tenantId == null)
+                cache = noTenantCache;
+            else
+                cache = map.GetOrAdd(tenantId, new OptionsCache<TOptions>());
 
             return cache.TryAdd(name, options);
         }
 
-        /// <summary>
-        /// Try to remove an options instance for the current tenant.
-        /// </summary>
-        /// <param name="name">The options name.</param>
-        /// <returns>True if the options was removed from the cache for the current tenant.</returns>
-        public bool TryRemove(string name)
+        public bool TryAdd(string name, TOptions options)
         {
-            name = name ?? Microsoft.Extensions.Options.Options.DefaultName;
-            var tenantId = multiTenantContextAccessor.MultiTenantContext?.TenantInfo?.Id ?? "";
-            var cache = map.GetOrAdd(tenantId, new OptionsCache<TOptions>());
+            throw new NotImplementedException();
+        }
+
+        public bool TryRemove(string tenantId, string name)
+        {
+            IOptionsMonitorCache<TOptions> cache;
+            if(tenantId == null)
+                cache = noTenantCache;
+            else
+                cache = map.GetOrAdd(tenantId, new OptionsCache<TOptions>());
 
             return cache.TryRemove(name);
+        }
+
+        public bool TryRemove(string name)
+        {
+            var result = true;
+
+            if(!noTenantCache.TryRemove(name))
+                result = false;
+
+            foreach (var cache in map.Values)
+                if (!cache.TryRemove(name))
+                    result = false;
+
+            return result;
         }
     }
 }
